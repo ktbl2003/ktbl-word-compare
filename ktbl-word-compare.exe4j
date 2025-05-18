@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<exe4j version="8.0" transformSequenceNumber="3">
+  <directoryPresets config="C:/Users/Administrator/Desktop" />
+  <application name="ktbl-word-compare" distributionSourceDir="C:/Users/Administrator/Desktop/kbtl-word-compare" />
+  <executable name="ktbl-word-compare" wrapperType="embed" executableDir="." redirectStderr="false" executableMode="console" />
+  <java mainClass="org.springframework.boot.loader.launch.JarLauncher" vmParameters="-Dfile.encoding=uft-8" preferredVM="client" minVersion="17" maxVersion="17">
+    <searchSequence>
+      <directory location="./jre" />
+    </searchSequence>
+    <classPath>
+      <archive location="D:/00mgi/ktbl/ktbl-out-main/ktbl-boot/target/ktbl-boot-1.0.0.jar" failOnError="false" />
+    </classPath>
+  </java>
+</exe4j>
