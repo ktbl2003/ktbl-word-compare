@@ -3,7 +3,6 @@ package com.ktbl.compare;
 import com.ktbl.vo.Ret;
 import com.ktbl.words.CmpComparator;
 import com.ktbl.words.DocConfig;
-
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.Data;
@@ -28,8 +27,6 @@ import java.nio.file.Paths;
 @RestController
 @RequestMapping("/api")
 public class CompareController {
-
-
     private static final String UPLOAD_DIR = "uploads/";
 
     // 文件上传接口
@@ -58,19 +55,21 @@ public class CompareController {
         }
     }
 
-//    @Operation(summary = "文档比较")
+    //    @Operation(summary = "文档比较")
     @PostMapping("/compare")
-    public void compareFiles(@RequestBody CompareRequest request, HttpServletRequest request1, HttpServletResponse response) {
+    public void compareFiles(@RequestBody CompareRequest reqData, HttpServletRequest request1, HttpServletResponse response) {
         try {
-            Path originalPath = Paths.get(request.getOriginal());
-            Path modifiedPath = Paths.get(request.getModified());
-
+            Path originalPath = Paths.get(reqData.getOriginal());
+            Path modifiedPath = Paths.get(reqData.getModified());
+            String summary = reqData.getSummary();
+            if (summary == null) {
+                summary = "1";
+            }
             if (!Files.exists(originalPath) || !Files.exists(modifiedPath)) {
                 throw new FileNotFoundException("文件不存在");
             }
             String templateDocxPath = originalPath.toString();
             String finalDocxPath = modifiedPath.toString();
-
 
             ZipSecureFile.setMinInflateRatio(0.0001);// 将最小解压比例调至0.1%
             System.setProperty("org.apache.poi.util.POIXMLTypeLoader.DEFAULT_MAX_ENTRIES", "1000000"); // 增加最大条目数
@@ -83,15 +82,30 @@ public class CompareController {
             config.setEnableCache(true);
             config.setBatchSize(20);
             config.setNeedCheckStyle(false);
+
+            if (summary.equals("1")) {
+                config.setNeedCataStatusInfo(true);
+            }
             // 实例化比较器
             CmpComparator comparator = new CmpComparator(config);
-            InputStream stream = comparator.compareDocumentsInstream(finalDocxPath, templateDocxPath);
-            // 设置响应头
-            //   response.setContentType("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
-            response.setHeader("Content-Disposition", "attachment; filename=compared.docx");
-            // 在CompareController中添加响应头设置
-            response.setContentType("application/octet-stream");
-            response.setHeader("Content-Disposition", "attachment; filename=" + URLEncoder.encode("文档比较结果.docx", "UTF-8"));
+
+            InputStream stream = null;
+            if (summary.equals("1")) {
+                // 修改为获取ZIP流
+                stream =  comparator.compareDocumentsZipInstream(finalDocxPath, templateDocxPath);
+                // 设置ZIP响应头
+                response.setContentType("application/zip");
+                String fileName = URLEncoder.encode("文档比较结果.zip", "UTF-8");
+                response.setHeader("Content-Disposition", "attachment; filename=" + fileName);
+            } else {
+                stream = comparator.compareDocumentsInstream(finalDocxPath, templateDocxPath);
+                // 设置响应头
+                //response.setContentType("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+                response.setHeader("Content-Disposition", "attachment; filename=compared.docx");
+                // 在CompareController中添加响应头设置
+                response.setContentType("application/octet-stream");
+                response.setHeader("Content-Disposition", "attachment; filename=" + URLEncoder.encode("文档比较结果.docx", "UTF-8"));
+            }
             // 将流写入响应
             byte[] buffer = new byte[1024];
             int bytesRead;
@@ -102,6 +116,7 @@ public class CompareController {
             response.flushBuffer();
 
         } catch (Exception e) {
+            e.printStackTrace();
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             try {
                 response.getWriter().write("文件比较失败: " + e.getMessage());
@@ -109,7 +124,6 @@ public class CompareController {
                 ex.printStackTrace();
             }
         }
-
     }
 
     private static void validateDocxFile(String path) throws IOException {
@@ -127,5 +141,6 @@ public class CompareController {
     private static class CompareRequest {
         private String original;
         private String modified;
+        private String summary;
     }
 }

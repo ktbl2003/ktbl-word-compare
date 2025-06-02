@@ -1,26 +1,33 @@
 <template>
   <div class="form-container" v-loading="loading" element-loading-text="正在比较文档，请稍候...,约需要需要一到二分钟"
-    element-loading-background="rgba(0, 0, 0, 0.7)">
+       element-loading-background="rgba(0, 0, 0, 0.7)">
     <el-form :model="form" label-width="120px" class="form-content">
       <!-- 原文档上传 -->
       <el-form-item label="原始文档">
         <el-input v-for="file in originalFileList" :key="file.uid" :value="file.name" readonly
-          style="width:400px;margin-right:10px;" />
+                  style="width:400px;margin-right:10px;"/>
         <el-upload :action="uploadUrl" :on-success="handleOriginalSuccess" :on-error="handleUploadError"
-          :show-file-list="false" :limit="1">
+                   :show-file-list="false" :limit="1">
           <el-button type="primary">选择</el-button>
         </el-upload>
       </el-form-item>
 
       <!-- 修改后文档上传 -->
-      <el-form-item label="改后文档">       
+      <el-form-item label="改后文档">
         <el-input v-for="file in modifiedFileList" :key="file.uid" :value="file.name" readonly
-        style="width:400px;margin-right:10px;" />
+                  style="width:400px;margin-right:10px;"/>
         <el-upload :action="uploadUrl" :on-success="handleModifiedSuccess" :on-error="handleUploadError"
-          :show-file-list="false" :limit="1">
+                   :show-file-list="false" :limit="1">
           <el-button type="primary">选择</el-button>
         </el-upload>
       </el-form-item>
+
+      <!-- 新增总结复选框 -->
+      <!--      <el-form-item label="文档修改总结">-->
+      <el-checkbox v-model="generateSummary" size="large">
+        生成文档修改总结
+      </el-checkbox>
+      <!--      </el-form-item>-->
     </el-form>
     <div style="text-align: center;">
       <el-button type="primary" @click="handleCompare" :disabled="!originalFileId || !modifiedFileId">
@@ -31,14 +38,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { ElMessage, UploadFile } from 'element-plus'
+import {ref} from 'vue'
+import {ElMessage, UploadFile} from 'element-plus'
 
 const originalFileList = ref<UploadFile[]>([])
 const modifiedFileList = ref<UploadFile[]>([])
-originalFileList.value = [{ uid: "", name: "" }];
-modifiedFileList.value = [{ uid: "", name: "" }];
-
+originalFileList.value = [{uid: "", name: ""}];
+modifiedFileList.value = [{uid: "", name: ""}];
+// 新增响应式变量
+const generateSummary = ref(false)
 const uploadUrl = (window.VITE_APP_API_URL || import.meta.env.VITE_APP_API_URL) + "/api/upload";
 const compareUrl = (window.VITE_APP_API_URL || import.meta.env.VITE_APP_API_URL) + "/api/compare"// 假设这个是你的比较API的URL
 console.log(uploadUrl, compareUrl)
@@ -76,7 +84,8 @@ const handleCompare = async () => {
       },
       body: JSON.stringify({
         original: originalFileId.value,
-        modified: modifiedFileId.value
+        modified: modifiedFileId.value,
+        summary: generateSummary.value ? 1 : 0
       })
     });
 
